@@ -1,0 +1,47 @@
+{
+  // --- Editor ergonomics ---
+  "editor.inlineSuggest.enabled": true,
+  "editor.inlineSuggest.suppressSuggestions": false,
+  "editor.quickSuggestionsDelay": 150,
+  "editor.suggest.preview": true,
+  "editor.suggest.showWords": false,            // reduce noise
+  "editor.acceptSuggestionOnEnter": "off",      // avoid accidental accepts on Enter
+
+  // --- GitHub Copilot core ---
+  "github.copilot.inlineSuggest.enable": true,
+  "github.copilot.editor.enableAutoCompletions": true,
+  "github.copilot.suggestions.showMethods": true,
+  "github.copilot.suggestions.showCodeActions": false,
+
+  // Prefer inline > chat; keep chat concise by default
+  "github.copilot.chat.experimental.enableQuickChat": false,
+  "github.copilot.chat.tone": "neutral",        // available in recent builds
+  "github.copilot.chat.responseLength": "short",
+  "github.copilot.chat.openInEditor": true,
+
+  // Grounding: use the files you’re working on
+  "github.copilot.chat.includeEditorSelection": true,
+  "github.copilot.chat.context.strategy": "workspace",  // prefer active repo context
+
+  // Reduce boilerplate comments
+  "github.copilot.advanced": {
+    "defaultCompletions": "concise"
+  },
+
+  // --- Claude for VS Code (if installed) ---
+  "claude.experimental.prompts.system": "Role: senior engineer. Style: concise, neutral, directive. No flattery. No filler. Ask at most 1 clarifying question only if essential. Cite files/lines.",
+  "claude.useQuickActions": false,
+  "claude.useEditorSelectionAsContext": true,
+  "claude.maxTokens": 1200,
+
+  // --- House Style Support ---
+  "editor.quickSuggestions": {
+    "strings": "on"  // Enable snippets in chat
+  },
+  "editor.snippetSuggestions": "top",
+  "editor.tabCompletion": "on",
+  
+  // Chat history and context
+  "github.copilot.chat.experimental.contextSelection": "auto",
+  "workbench.editor.enablePreview": false  // Always open new tabs for referencing files
+}

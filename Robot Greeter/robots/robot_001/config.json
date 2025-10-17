@@ -1,0 +1,44 @@
+{
+  "robotId": "robot_001",
+  "name": "Lobby Greeter",
+  "location": {
+    "building": "Main Office",
+    "floor": "Ground Floor", 
+    "room": "Reception Lobby",
+    "coordinates": {
+      "x": 0,
+      "y": 0,
+      "facing": "north"
+    }
+  },
+  "hardware": {
+    "model": "ESP32-CAM AI-Thinker",
+    "cameraModule": "OV2640",
+    "sensors": ["PIR Motion Sensor HC-SR501"],
+    "audio": "8Ω 0.5W Speaker",
+    "power": "5V 2A USB Supply"
+  },
+  "network": {
+    "macAddress": "",
+    "ipAddress": "",
+    "wifiSSID": "Office_WiFi",
+    "mqttClientId": "robot_001_lobby"
+  },
+  "configuration": {
+    "motionCooldown": 5000,
+    "imageQuality": 10,
+    "frameSize": "UXGA",
+    "statusInterval": 30000,
+    "debugMode": false,
+    "pirSensitivity": 0.7
+  },
+  "deployment": {
+    "installDate": "2025-10-17",
+    "installedBy": "System Administrator",
+    "firmwareVersion": "1.0.0",
+    "lastMaintenance": null,
+    "nextMaintenance": "2025-11-17"
+  },
+  "purpose": "Greet visitors entering the main lobby and collect visitor analytics for reception desk",
+  "active": true
+}

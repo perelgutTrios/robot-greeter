@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Greeter - Visitor Management</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; padding: 20px; background: #f5f5f5; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .robot { font-size: 48px; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .upload-zone { border: 2px dashed #007bff; padding: 40px; text-align: center; border-radius: 8px; margin: 20px 0; }
+        .upload-zone.dragover { background: #e3f2fd; }
+        .visitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .visitor-card { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; }
+        .visitor-image { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-right: 15px; }
+        .visitor-info { display: flex; align-items: center; }
+        .visitor-details { flex: 1; }
+        .status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status.identified { background: #d4edda; color: #155724; }
+        .status.unidentified { background: #f8d7da; color: #721c24; }
+        input, button { padding: 8px 12px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; }
+        button:hover { background: #0056b3; }
+        .mqtt-status { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin-left: 10px; }
+        .mqtt-connected { background: #d4edda; color: #155724; }
+        .mqtt-disconnected { background: #f8d7da; color: #721c24; }
+        .log { background: #343a40; color: #ffffff; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="robot">🤖</div>
+        <h1>Robot Greeter - Visitor Management</h1>
+        <div id="connectionStatus">
+            <span id="socketStatus">🔴 Disconnected</span>
+            <span id="mqttStatus" class="mqtt-status mqtt-disconnected">MQTT: Disconnected</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📸 Upload Visitor Image</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-zone" id="uploadZone">
+                <p>📁 Drop image here or click to select</p>
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                <input type="text" id="robotIdInput" placeholder="Robot ID (optional)" style="display: block; margin: 10px auto;">
+            </div>
+            <button type="submit">🔍 Process Visitor</button>
+        </form>
+        <div id="uploadResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>👥 Recent Visitors</h2>
+        <div id="visitorsGrid" class="visitor-grid">
+            Loading visitors...
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📊 System Log</h2>
+        <div id="systemLog" class="log">
+            System initialized...<br>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadZone = document.getElementById('uploadZone');
+        const imageInput = document.getElementById('imageInput');
+        const robotIdInput = document.getElementById('robotIdInput');
+        const uploadResult = document.getElementById('uploadResult');
+        const visitorsGrid = document.getElementById('visitorsGrid');
+        const systemLog = document.getElementById('systemLog');
+        const socketStatus = document.getElementById('socketStatus');
+        const mqttStatus = document.getElementById('mqttStatus');
+
+        let isConnected = false;
+
+        // Socket event handlers
+        socket.on('connect', () => {
+            isConnected = true;
+            socketStatus.textContent = '🟢 Connected';
+            mqttStatus.className = 'mqtt-status mqtt-connected';
+            mqttStatus.textContent = 'MQTT: Connected';
+            addLog('Connected to server');
+            loadVisitors();
+        });
+
+        socket.on('disconnect', () => {
+            isConnected = false;
+            socketStatus.textContent = '🔴 Disconnected';
+            mqttStatus.className = 'mqtt-status mqtt-disconnected';
+            mqttStatus.textContent = 'MQTT: Disconnected';
+            addLog('Disconnected from server');
+        });
+
+        socket.on('visitorDetected', (data) => {
+            addLog(`Visitor detected by ${data.robotId}: ${data.isReturning ? 'Returning' : 'New'} visitor`);
+            loadVisitors();
+            
+            uploadResult.innerHTML = `
+                <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <h4>✅ Visitor Processed Successfully</h4>
+                    <p><strong>Type:</strong> ${data.isReturning ? 'Returning' : 'New'} visitor</p>
+                    <p><strong>Confidence:</strong> ${Math.round(data.confidence * 100)}%</p>
+                    ${data.visitor.name ? `<p><strong>Name:</strong> ${data.visitor.name}</p>` : ''}
+                </div>
+            `;
+        });
+
+        socket.on('hardwareVisitorDetection', (data) => {
+            addLog(`Hardware detection from ${data.robotId}: ${JSON.stringify(data.detection)}`);
+        });
+
+        socket.on('robotStatusUpdate', (data) => {
+            addLog(`Robot ${data.robotId} status: ${JSON.stringify(data.status)}`);
+        });
+
+        // File upload handling
+        uploadZone.addEventListener('click', () => imageInput.click());
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageInput.files = files;
+            }
+        });
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!imageInput.files[0]) {
+                alert('Please select an image file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+            formData.append('robotId', robotIdInput.value || 'web-upload');
+
+            try {
+                uploadResult.innerHTML = '<p>🔄 Processing image...</p>';
+                
+                const response = await fetch('/api/visitors/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Upload failed');
+                }
+
+                // Success handled by socket event
+                imageInput.value = '';
+                
+            } catch (error) {
+                uploadResult.innerHTML = `
+                    <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                        <h4>❌ Upload Error</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+
+        // Load and display visitors
+        async function loadVisitors() {
+            try {
+                const response = await fetch('/api/visitors');
+                const visitors = await response.json();
+                
+                if (visitors.length === 0) {
+                    visitorsGrid.innerHTML = '<p>No visitors recorded yet</p>';
+                    return;
+                }
+
+                visitorsGrid.innerHTML = visitors.map(visitor => `
+                    <div class="visitor-card">
+                        <div class="visitor-info">
+                            <div class="visitor-details">
+                                <h4>${visitor.name || 'Unidentified Visitor'}</h4>
+                                <span class="status ${visitor.name ? 'identified' : 'unidentified'}">
+                                    ${visitor.name ? 'Identified' : 'Unidentified'}
+                                </span>
+                                <p><strong>Visits:</strong> ${visitor.visit_count}</p>
+                                <p><strong>Last Seen:</strong> ${formatLocalTime(visitor.last_seen)}</p>
+                                ${!visitor.name ? `
+                                    <div style="margin-top: 10px;">
+                                        <input type="text" placeholder="Enter name" id="name-${visitor.id}">
+                                        <button onclick="identifyVisitor(${visitor.id})">Identify</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                visitorsGrid.innerHTML = '<p>Error loading visitors</p>';
+                addLog(`Error loading visitors: ${error.message}`);
+            }
+        }
+
+        function formatLocalTime(timestamp) {
+            // Convert UTC timestamp to local time with timezone display
+            const date = new Date(timestamp);
+            return date.toLocaleString('en-US', { 
+                timeZoneName: 'short',
+                hour12: true
+            });
+        }
+
+        // Identify visitor
+        async function identifyVisitor(visitorId) {
+            const nameInput = document.getElementById(`name-${visitorId}`);
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visitors/${visitorId}/identify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+
+                if (response.ok) {
+                    addLog(`Visitor ${visitorId} identified as: ${name}`);
+                    loadVisitors();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error}`);
+                }
+            } catch (error) {
+                alert(`Error identifying visitor: ${error.message}`);
+            }
+        }
+
+        // Utility functions
+        function addLog(message) {
+            const timestamp = new Date().toLocaleString('en-US', { 
+                timeZoneName: 'short',
+                hour12: true
+            });
+            systemLog.innerHTML += `[${timestamp}] ${message}<br>`;
+            systemLog.scrollTop = systemLog.scrollHeight;
+        }
+
+        // Initialize
+        loadVisitors();
+    </script>
+</body>
+</html>

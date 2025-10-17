@@ -1,0 +1,10 @@
+[
+  { "key": "tab", "command": "editor.action.inlineSuggest.commit", "when": "inlineSuggestionVisible" },
+  { "key": "alt+]", "command": "editor.action.inlineSuggest.showNext", "when": "inlineSuggestionVisible" },
+  { "key": "alt+[", "command": "editor.action.inlineSuggest.showPrevious", "when": "inlineSuggestionVisible" },
+  { "key": "ctrl+alt+\\", "command": "github.copilot.generate", "when": "editorTextFocus" },          // open quick inline generation
+  { "key": "ctrl+alt+shift+/", "command": "github.copilot.chat.explain", "when": "editorHasSelection" }, // explain selection ONLY on demand
+  { "key": "ctrl+alt+h", "command": "workbench.action.files.openFile", "args": "copilot-house-style-snippets.md" }, // quick access to house style snippets
+  { "key": "ctrl+alt+1", "command": "workbench.action.chat.open", "when": "!chatIsOpen" },              // open chat with general style
+  { "key": "ctrl+alt+2", "command": "workbench.action.chat.open", "when": "!chatIsOpen" }               // open chat with code style
+]

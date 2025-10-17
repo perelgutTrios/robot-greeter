@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Copilot House Style - Quick Copy</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .snippet { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 4px; margin: 10px 0; padding: 15px; }
+        .snippet h3 { margin-top: 0; color: #569cd6; }
+        .snippet pre { background: #0d1117; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { background: #0e639c; color: white; border: none; padding: 8px 16px; border-radius: 3px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #1177bb; }
+        .copied { background: #28a745 !important; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Copilot House Style Snippets</h1>
+    
+    <div class="snippet">
+        <h3>🎯 General Request</h3>
+        <pre id="general">Format: One-sentence answer first. Then 3–6 bullets with steps or trade-offs.
+Style: Imperative voice. No flattery, no filler.
+Uncertainty: Start with [Unverified] and say what would verify.
+Context: Use workspace files and current selection.
+
+</pre>
+        <button onclick="copyToClipboard('general', this)">Copy General Format</button>
+    </div>
+
+    <div class="snippet">
+        <h3>💻 Code Request</h3>
+        <pre id="code">Format: Minimal, runnable example. One file if possible.
+Output: Then a 4-line 'How to run'.
+Style: No commentary beyond what's needed to execute.
+Context: Use current workspace and file selection.
+
+</pre>
+        <button onclick="copyToClipboard('code', this)">Copy Code Format</button>
+    </div>
+
+    <div class="snippet">
+        <h3>🔍 Review Request</h3>
+        <pre id="review">Task: Review [specify file] lines [start]–[end].
+Format: List concrete issues by line (correctness/perf/maintainability).
+Output: Provide diffs for fixes.
+Style: No praise. Issues only.
+
+</pre>
+        <button onclick="copyToClipboard('review', this)">Copy Review Format</button>
+    </div>
+
+    <div class="snippet">
+        <h3>⚖️ Decision Request</h3>
+        <pre id="decision">Format: State recommendation in one line first.
+Structure: Then Pros/Cons (3 each) and next step.
+Style: Direct, actionable.
+Context: Current project constraints and workspace.
+
+</pre>
+        <button onclick="copyToClipboard('decision', this)">Copy Decision Format</button>
+    </div>
+
+    <script>
+        function copyToClipboard(elementId, button) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

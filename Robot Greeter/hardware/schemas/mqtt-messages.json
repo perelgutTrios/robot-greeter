@@ -1,0 +1,225 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Robot Greeter MQTT Messages",
+  "description": "Schema definitions for MQTT messages between ESP32-CAM hardware and central server",
+  
+  "definitions": {
+    "statusReport": {
+      "type": "object",
+      "title": "Robot Status Report",
+      "description": "Periodic status update from robot hardware",
+      "properties": {
+        "robotId": {
+          "type": "string",
+          "description": "Unique identifier for the robot",
+          "example": "robot_001"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["online", "offline", "error", "maintenance"],
+          "description": "Current operational status"
+        },
+        "uptime": {
+          "type": "integer",
+          "description": "Milliseconds since last restart",
+          "minimum": 0
+        },
+        "freeHeap": {
+          "type": "integer", 
+          "description": "Available memory in bytes",
+          "minimum": 0
+        },
+        "wifiSignal": {
+          "type": "integer",
+          "description": "WiFi signal strength in dBm",
+          "maximum": 0,
+          "minimum": -100
+        },
+        "lastMotion": {
+          "type": "integer",
+          "description": "Timestamp of last motion detection",
+          "minimum": 0
+        },
+        "cameraStatus": {
+          "type": "string",
+          "enum": ["operational", "error", "disconnected"],
+          "description": "Camera module status"
+        },
+        "temperature": {
+          "type": "number",
+          "description": "ESP32 internal temperature in Celsius"
+        }
+      },
+      "required": ["robotId", "status", "uptime"],
+      "additionalProperties": false
+    },
+    
+    "visitorDetection": {
+      "type": "object", 
+      "title": "Visitor Detection Event",
+      "description": "Motion sensor triggered visitor detection",
+      "properties": {
+        "timestamp": {
+          "type": "integer",
+          "description": "Milliseconds since epoch when detected",
+          "minimum": 0
+        },
+        "robotId": {
+          "type": "string",
+          "description": "Robot that detected the visitor"
+        },
+        "sensorTriggered": {
+          "type": "boolean",
+          "description": "PIR motion sensor activation"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Detection confidence (0-1)"
+        },
+        "imageUploadStatus": {
+          "type": "string",
+          "enum": ["pending", "success", "failed"],
+          "description": "Status of image upload to server"
+        }
+      },
+      "required": ["timestamp", "robotId", "sensorTriggered"],
+      "additionalProperties": false
+    },
+    
+    "greetingCommand": {
+      "type": "object",
+      "title": "Greeting Command",
+      "description": "Server instruction to robot for visitor greeting",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["new_visitor", "returning_visitor", "vip_visitor", "staff_member"],
+          "description": "Classification of visitor"
+        },
+        "name": {
+          "type": "string",
+          "description": "Visitor name (if identified)",
+          "maxLength": 100
+        },
+        "visitCount": {
+          "type": "integer",
+          "description": "Number of previous visits",
+          "minimum": 1
+        },
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of last visit"
+        },
+        "greetingText": {
+          "type": "string",
+          "description": "Custom greeting message",
+          "maxLength": 500
+        },
+        "audioTone": {
+          "type": "object",
+          "properties": {
+            "beeps": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Number of greeting beeps"
+            },
+            "frequency": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 5000,
+              "description": "Tone frequency in Hz"
+            },
+            "duration": {
+              "type": "integer",
+              "minimum": 50,
+              "maximum": 2000,
+              "description": "Beep duration in milliseconds"
+            }
+          }
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    
+    "configUpdate": {
+      "type": "object",
+      "title": "Configuration Update",
+      "description": "Runtime configuration changes for robot",
+      "properties": {
+        "motionCooldown": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 60000,
+          "description": "Milliseconds between motion detections"
+        },
+        "imageQuality": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 63,
+          "description": "JPEG quality (lower = better quality)"
+        },
+        "frameSize": {
+          "type": "string",
+          "enum": ["QVGA", "CIF", "VGA", "SVGA", "XGA", "SXGA", "UXGA"],
+          "description": "Camera capture resolution"
+        },
+        "statusInterval": {
+          "type": "integer",
+          "minimum": 5000,
+          "maximum": 300000,
+          "description": "Milliseconds between status reports"
+        },
+        "debugMode": {
+          "type": "boolean",
+          "description": "Enable verbose logging"
+        },
+        "pirSensitivity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "PIR sensor sensitivity (0-1)"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  
+  "topics": {
+    "robot/{robotId}/status": {
+      "description": "Robot publishes status reports",
+      "direction": "publish",
+      "schema": { "$ref": "#/definitions/statusReport" },
+      "qos": 1,
+      "retain": true
+    },
+    
+    "robot/{robotId}/visitor_detected": {
+      "description": "Robot publishes visitor detection events", 
+      "direction": "publish",
+      "schema": { "$ref": "#/definitions/visitorDetection" },
+      "qos": 1,
+      "retain": false
+    },
+    
+    "robot/{robotId}/greeting": {
+      "description": "Server sends greeting commands to robot",
+      "direction": "subscribe", 
+      "schema": { "$ref": "#/definitions/greetingCommand" },
+      "qos": 1,
+      "retain": false
+    },
+    
+    "robot/{robotId}/config": {
+      "description": "Server sends configuration updates",
+      "direction": "subscribe",
+      "schema": { "$ref": "#/definitions/configUpdate" },
+      "qos": 2,
+      "retain": true
+    }
+  }
+}

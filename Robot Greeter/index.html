@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Greeter</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .robot { font-size: 60px; text-align: center; margin: 20px 0; }
+        input, button { padding: 10px; margin: 5px; font-size: 16px; }
+        #greeting { background: #f0f8ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="robot">🤖</div>
+    <h1>Robot Greeter</h1>
+    <input type="text" id="nameInput" placeholder="Enter your name" required maxlength="50" aria-label="Your name" />
+    <button id="greetBtn">Greet Me!</button>
+    <div id="greeting"></div>
+
+    <script>
+        function createGreetingElement(greeting) {
+            const container = document.createElement('div');
+            
+            const title = document.createElement('h3');
+            title.textContent = '🤖 Robot Says:';
+            
+            const message = document.createElement('p');
+            message.textContent = greeting;
+            
+            const timestamp = document.createElement('small');
+            timestamp.textContent = `Generated at ${new Date().toLocaleTimeString()}`;
+            
+            container.appendChild(title);
+            container.appendChild(message);
+            container.appendChild(timestamp);
+            
+            return container;
+        }
+
+        function greet() {
+            const name = document.getElementById('nameInput').value.trim().replace(/[<>&"']/g, '') || 'Friend';
+            const greetings = [
+                `Hello ${name}! I'm your friendly robot assistant.`,
+                `Greetings ${name}! How can I help you today?`,
+                `Welcome ${name}! Ready to explore together?`
+            ];
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            
+            const greetingDiv = document.getElementById('greeting');
+            greetingDiv.textContent = '';
+            greetingDiv.appendChild(createGreetingElement(randomGreeting));
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('greetBtn').addEventListener('click', greet);
+            document.getElementById('nameInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    greet();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

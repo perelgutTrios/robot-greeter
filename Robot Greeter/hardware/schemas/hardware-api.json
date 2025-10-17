@@ -1,0 +1,205 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Robot Greeter Hardware API",
+  "description": "API specification for communication between ESP32-CAM hardware and central server",
+  "version": "1.0.0",
+  
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    },
+    {
+      "url": "mqtt://localhost:1883", 
+      "description": "MQTT broker for real-time communication"
+    }
+  ],
+  
+  "communication": {
+    "protocols": ["HTTP", "MQTT"],
+    "dataFormat": "JSON",
+    "imageFormat": "JPEG",
+    "encoding": "UTF-8"
+  },
+  
+  "endpoints": {
+    "imageUpload": {
+      "method": "POST",
+      "path": "/api/visitors/upload",
+      "description": "Upload visitor image for face recognition",
+      "contentType": "multipart/form-data",
+      "parameters": {
+        "image": {
+          "type": "file",
+          "format": "JPEG",
+          "maxSize": "10MB",
+          "required": true,
+          "description": "Captured visitor image"
+        },
+        "robotId": {
+          "type": "string",
+          "required": true,
+          "example": "robot_001",
+          "description": "Unique robot identifier"
+        },
+        "timestamp": {
+          "type": "integer",
+          "required": false,
+          "description": "Capture timestamp (milliseconds since epoch)"
+        },
+        "motionConfidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "required": false,
+          "description": "PIR sensor confidence level"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Image processed successfully",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "success": { "type": "boolean" },
+              "visitor": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "name": { "type": "string" },
+                  "visitCount": { "type": "integer" },
+                  "lastSeen": { "type": "string" }
+                }
+              },
+              "isReturning": { "type": "boolean" },
+              "confidence": { "type": "number" }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid image or no face detected",
+          "schema": {
+            "type": "object", 
+            "properties": {
+              "error": { "type": "string" }
+            }
+          }
+        },
+        "500": {
+          "description": "Server processing error"
+        }
+      }
+    },
+    
+    "robotStatus": {
+      "method": "GET",
+      "path": "/api/robots/{robotId}/status",
+      "description": "Get current robot status",
+      "parameters": {
+        "robotId": {
+          "type": "string",
+          "in": "path",
+          "required": true,
+          "description": "Robot identifier"
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Robot status information",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "robotId": { "type": "string" },
+              "status": { "type": "string" },
+              "lastSeen": { "type": "string" },
+              "uptime": { "type": "integer" },
+              "visitorsDetected": { "type": "integer" }
+            }
+          }
+        }
+      }
+    }
+  },
+  
+  "hardwareRequirements": {
+    "minimum": {
+      "processor": "ESP32 240MHz dual-core",
+      "memory": "512KB SRAM", 
+      "storage": "4MB Flash",
+      "camera": "OV2640 2MP",
+      "connectivity": "WiFi 802.11 b/g/n"
+    },
+    "recommended": {
+      "processor": "ESP32-S3 240MHz dual-core",
+      "memory": "512KB SRAM + 8MB PSRAM",
+      "storage": "16MB Flash", 
+      "camera": "OV5640 5MP",
+      "connectivity": "WiFi 802.11 b/g/n + Bluetooth"
+    }
+  },
+  
+  "powerRequirements": {
+    "voltage": "5V DC",
+    "current": {
+      "idle": "200mA",
+      "active": "500mA", 
+      "peak": "800mA"
+    },
+    "powerSupply": "Minimum 2A recommended"
+  },
+  
+  "environmentalLimits": {
+    "temperature": {
+      "operating": "-10°C to +85°C",
+      "storage": "-40°C to +125°C"
+    },
+    "humidity": "5% to 95% non-condensing",
+    "ipRating": "IP20 (indoor use only)"
+  },
+  
+  "errorCodes": {
+    "hardware": {
+      "CAM_001": "Camera initialization failed",
+      "CAM_002": "Image capture timeout", 
+      "CAM_003": "Image quality too low",
+      "PIR_001": "Motion sensor not responding",
+      "NET_001": "WiFi connection failed",
+      "NET_002": "MQTT broker unreachable",
+      "NET_003": "Server upload timeout"
+    },
+    "software": {
+      "MEM_001": "Insufficient memory for operation",
+      "CFG_001": "Invalid configuration parameter",
+      "JSON_001": "Message parsing error"
+    }
+  },
+  
+  "diagnostics": {
+    "healthCheck": {
+      "description": "Automated system health verification",
+      "tests": [
+        "Camera module initialization",
+        "PIR sensor responsiveness", 
+        "WiFi connectivity",
+        "MQTT broker connection",
+        "Memory usage check",
+        "Temperature monitoring"
+      ],
+      "interval": "Every 5 minutes",
+      "reportingTopic": "robot/{robotId}/diagnostics"
+    },
+    
+    "maintenance": {
+      "cleaningSchedule": "Monthly lens cleaning recommended",
+      "firmwareUpdates": "OTA updates via MQTT config messages",
+      "calibration": "PIR sensor sensitivity adjustment as needed"
+    }
+  },
+  
+  "security": {
+    "dataEncryption": "TLS 1.2 for HTTPS endpoints",
+    "authentication": "MQTT client certificates (production)",
+    "imagePrivacy": "Local processing with secure transmission",
+    "accessControl": "MAC address filtering supported"
+  }
+}
